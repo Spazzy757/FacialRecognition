@@ -1,0 +1,4 @@
+Django==2.1
+face_recognition
+scikit-learn
+ipdb
