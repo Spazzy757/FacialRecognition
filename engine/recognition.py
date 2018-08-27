@@ -4,6 +4,7 @@ import numpy as np
 import os.path
 import time
 import os
+import math
 
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
@@ -54,18 +55,18 @@ class BreedClassifier(object):
             end = time.time()
 
             results = np.squeeze(results)
-            print(results.argsort())
             top_k = results.argsort()[-5:][::-1]
 
             labels = self.load_labels(self.label_file)
 
-        print('\nEvaluation time (1-image): {:.3f}s\n'.format(end - start))
-
+        response = []
         for i in top_k:
-            print(labels[i], results[i])
+            response.append({'prediction': labels[i],
+                            'probability': '{}%'.format(
+                                round(results[i]*100, 2)
+                            )})
         data = {
-            'labels': labels,
-            'results': results.tolist(),
+            'results': response,
             'classification_time': end - start
         }
         return data

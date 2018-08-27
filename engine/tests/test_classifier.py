@@ -1,7 +1,7 @@
 from engine.recognition import BreedClassifier, set_clean_dataset
 from django.test import TestCase
 from engine.models import Image
-import os
+import pprint
 
 
 class CapacityImportTestCase(TestCase):
@@ -13,8 +13,8 @@ class CapacityImportTestCase(TestCase):
 
     def test_breed_classifier(self):
         classifier = BreedClassifier()
-        result = classifier.classify('media/test_images/bear2.jpg')
-
+        result = classifier.classify('media/test_images/sven.jpeg')
+        pprint.pprint(result)
 
     def test_clean_data(self):
         pass

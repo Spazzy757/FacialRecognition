@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Todo: Change this into a django management command
-python Tensorflow-Dog-Breed-Classifier/retraining.py \
+python engine/management/commands/retraining.py \
 --image_dir=/code/media/dataset/ \
 --model_dir=/code/media/models/ \
 --output_labels=/code/media/models/breed_labels.txt \
