@@ -1,23 +1,21 @@
-from engine.recognition import NameClassifier
+from engine.recognition import BreedClassifier, set_clean_dataset
 from django.test import TestCase
+from engine.models import Image
 import os
 
 
 class CapacityImportTestCase(TestCase):
 
-    def test_recognition(self):
-        recog = NameClassifier('engine/images')
-        full_file_path = os.path.join("engine/tests/data/", 'unknown.py')
+    def setUp(self):
+        Image.objects.create(name='lisa')
+        Image.objects.create(name='neil')
+        Image.objects.create(name='nana')
 
-        print("Looking for faces in {}".format('unknown'))
+    def test_breed_classifier(self):
+        classifier = BreedClassifier()
+        result = classifier.classify('media/test_images/bear2.jpg')
 
-        # Find all people in the image using a trained classifier model
-        # Note: You can pass in either a classifier file name or a classifier
-        # model instance
-        predictions = recog.predict(full_file_path,
-                                    model_path="trained_knn_model.clf")
-        import ipdb; ipdb.set_trace()
-        # # Print results on the console
-        # for name, (top, right, bottom, left) in predictions:
-        #     print("- Found {} at ({}, {})".format(name, left, top))
 
+    def test_clean_data(self):
+        pass
+        # set_clean_dataset()

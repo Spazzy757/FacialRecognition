@@ -1,146 +1,190 @@
-from face_recognition.face_recognition_cli import image_files_in_folder
-from PIL import Image, ImageDraw
-from sklearn import neighbors
-import face_recognition
+import tensorflow as tf
+import pandas as pd
+import numpy as np
 import os.path
-import pickle
-import math
+import time
 import os
+
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-import os
 
 
-class NameClassifier(object):
+class BreedClassifier(object):
 
-    def __init__(self, train_dir, model_save_path=None,
-                 n_neighbors=None, knn_algo='ball_tree',
-                 verbose=False):
-        """
-            Trains a k-nearest neighbors classifier for face recognition.
-            :param train_dir: directory that contains a sub-directory for each
-            known person, with its name.
-             (View in source code to see train_dir example tree structure)
-             Structure:
-                <train_dir>/
-                ├── <person1>/
-                │   ├── <somename1>.jpeg
-                │   ├── <somename2>.jpeg
-                │   ├── ...
-                ├── <person2>/
-                │   ├── <somename1>.jpeg
-                │   └── <somename2>.jpeg
-                └── ...
-            :param model_save_path: (optional) path to save model on disk
-            :param n_neighbors: (optional) number of neighbors to weigh in
-            classification. Chosen automatically if not specified
-            :param knn_algo: (optional) underlying data structure to support
-            knn.default is ball_tree
-            :param verbose: verbosity of training
-            :return: returns knn classifier that was trained on the given data.
-            """
-        X = []
-        y = []
+    def __init__(self):
+        # TensorFlow configuration/initialization
+        model_file = "media/models/breed_model.pb"
+        self.label_file = "media/models/breed_labels.txt"
+        self.input_height = 299
+        self.input_width = 299
+        self.input_mean = 128
+        self.input_std = 128
+        input_layer = "Mul"
+        output_layer = "final_result"
 
-        # Loop through each person in the training set
-        for class_dir in os.listdir(train_dir):
-            if not os.path.isdir(os.path.join(train_dir, class_dir)):
-                continue
+        # Load TensorFlow Graph from disk
+        self.graph = self.load_graph(model_file)
 
-            # Loop through each training image for the current person
-            for img_path in image_files_in_folder(
-                    os.path.join(train_dir, class_dir)):
-                image = face_recognition.load_image_file(img_path)
-                face_bounding_boxes = face_recognition.face_locations(image)
+        # Grab the Input/Output operations
+        input_name = "import/" + input_layer
+        output_name = "import/" + output_layer
 
-                if len(face_bounding_boxes) != 1:
-                    # If there are no people (or too many people) in a training
-                    # image, skip the image.
-                    if verbose:
-                        print("Image {} not suitable for training: {}".format(
-                            img_path, "Didn't find a face" if len(
-                                face_bounding_boxes) < 1 else "Found more than "
-                                                              "one face"))
-                else:
-                    # Add face encoding for current image to the training set
-                    X.append(face_recognition.face_encodings(
-                        image,
-                        known_face_locations=face_bounding_boxes
-                    )[0])
-                    y.append(class_dir)
+        self.input_operation = self.graph.get_operation_by_name(input_name)
+        self.output_operation = self.graph.get_operation_by_name(output_name)
 
-        # Determine how many neighbors to use for weighting in the KNN
-        # classifier
-        if n_neighbors is None:
-            n_neighbors = int(round(math.sqrt(len(X))))
-            if verbose:
-                print("Chose n_neighbors automatically:", n_neighbors)
-
-        # Create and train the KNN classifier
-        knn_clf = neighbors.KNeighborsClassifier(n_neighbors=n_neighbors,
-                                                 algorithm=knn_algo,
-                                                 weights='distance')
-        knn_clf.fit(X, y)
-
-        # Save the trained KNN classifier
-        if model_save_path is not None:
-            with open(model_save_path, 'wb') as f:
-                pickle.dump(knn_clf, f)
-
-        self.knn_clf = knn_clf
-
-    def predict(self, x_img_path, knn_clf=None, model_path=None,
-                distance_threshold=0.6):
-        """
-            Recognizes faces in given image using a trained KNN classifier
-            :param X_img_path: path to image to be recognized
-            :param knn_clf: (optional) a knn classifier object. if not
-            specified, model_save_path must be specified.
-            :param model_path: (optional) path to a pickled knn classifier. if
-            not specified, model_save_path must be knn_clf.
-            :param distance_threshold: (optional) distance threshold for face
-            classification. the larger it is, the more chance
-                   of mis-classifying an unknown person as a known one.
-            :return: a list of names and face locations for the recognized faces
-            in the image: [(name, bounding box), ...].
-                For faces of unrecognized persons, the name 'unknown' will be
-                returned.
-            """
-        if not os.path.isfile(x_img_path) or os.path.splitext(x_img_path)[1][
-                                             1:] not in ALLOWED_EXTENSIONS:
-            raise Exception("Invalid image path: {}".format(x_img_path))
-
-        if knn_clf is None and model_path is None:
-            raise Exception("Must supply knn classifier either thourgh knn_clf "
-                            "or model_path")
-
-        # Load a trained KNN model (if one was passed in)
-        if knn_clf is None:
-            with open(model_path, 'rb') as f:
-                knn_clf = pickle.load(f)
-
-        # Load image file and find face locations
-        x_img = face_recognition.load_image_file(x_img_path)
-        x_face_locations = face_recognition.face_locations(x_img)
-
-        # If no faces are found in the image, return an empty result.
-        if len(x_face_locations) == 0:
-            return []
-
-        # Find encodings for faces in the test iamge
-        faces_encodings = face_recognition.face_encodings(
-            x_img,
-            known_face_locations=x_face_locations
+    def classify(self, file_name):
+        t = self.read_tensor_from_image_file(
+            file_name,
+            input_height=self.input_height,
+            input_width=self.input_width,
+            input_mean=self.input_mean,
+            input_std=self.input_std
         )
 
-        # Use the KNN model to find the best matches for the test face
-        closest_distances = knn_clf.kneighbors(faces_encodings, n_neighbors=1)
-        are_matches = [closest_distances[0][i][0] <= distance_threshold for i in
-                       range(len(x_face_locations))]
+        with tf.Session(graph=self.graph) as sess:
+            start = time.time()
 
-        # Predict classes and remove classifications that aren't within the
-        # threshold
+            results = sess.run(
+                self.output_operation.outputs[0],
+                {
+                    self.input_operation.outputs[0]: t
+                }
+            )
 
-        return [(pred, loc) if rec else ("unknown", loc) for pred, loc, rec in
-                zip(knn_clf.predict(faces_encodings), x_face_locations,
-                    are_matches)]
+            end = time.time()
+
+            results = np.squeeze(results)
+            print(results.argsort())
+            top_k = results.argsort()[-5:][::-1]
+
+            labels = self.load_labels(self.label_file)
+
+        print('\nEvaluation time (1-image): {:.3f}s\n'.format(end - start))
+
+        for i in top_k:
+            print(labels[i], results[i])
+        data = {
+            'labels': labels,
+            'results': results.tolist(),
+            'classification_time': end - start
+        }
+        return data
+
+    @staticmethod
+    def load_graph(model_file):
+        graph = tf.Graph()
+        graph_def = tf.GraphDef()
+
+        with open(model_file, "rb") as f:
+            graph_def.ParseFromString(f.read())
+        with graph.as_default():
+            tf.import_graph_def(graph_def)
+        return graph
+
+    @staticmethod
+    def read_tensor_from_image_file(
+            file_name,
+            input_height=299,
+            input_width=299,
+            input_mean=0,
+            input_std=255
+    ):
+        input_name = "file_reader"
+
+        output_name = "normalized"
+
+        file_reader = tf.read_file(file_name, input_name)
+
+        if file_name.endswith(".png"):
+            image_reader = tf.image.decode_png(
+                file_reader,
+                channels=3,
+                name='png_reader'
+            )
+        elif file_name.endswith(".gif"):
+            image_reader = tf.squeeze(
+                tf.image.decode_gif(
+                    file_reader,
+                    name='gif_reader'
+                )
+            )
+        elif file_name.endswith(".bmp"):
+            image_reader = tf.image.decode_bmp(
+                file_reader,
+                name='bmp_reader'
+            )
+        else:
+            image_reader = tf.image.decode_jpeg(
+                file_reader,
+                channels=3,
+                name='jpeg_reader'
+            )
+
+        float_caster = tf.cast(image_reader, tf.float32)
+
+        dims_expander = tf.expand_dims(float_caster, 0)
+
+        resized = tf.image.resize_bilinear(
+            dims_expander,
+            [
+                input_height,
+                input_width
+            ]
+        )
+        normalized = tf.divide(
+            tf.subtract(
+                resized,
+                [
+                    input_mean
+                ]
+            ),
+            [
+                input_std
+            ]
+        )
+
+        # Run TF Session
+        sess = tf.Session()
+        result = sess.run(normalized)
+        return result
+
+    @staticmethod
+    def load_labels(label_file):
+        label = []
+        proto_as_ascii_lines = tf.gfile.GFile(label_file).readlines()
+
+        for l in proto_as_ascii_lines:
+            label.append(l.rstrip())
+
+        return label
+
+
+def set_clean_dataset():
+    dataset_labels = pd.read_csv('dataset/labels.csv')
+    count = 0
+    for i in range(len(dataset_labels)):
+        print('moving {} into directory {}'.format(
+            dataset_labels.values[i][0],
+            dataset_labels.values[i][1],
+        ))
+        #  Make Directory if it does not exist
+        if not os.path.exists('media/dataset/{}'.format(
+                dataset_labels.values[i][1])):
+            os.makedirs('media/dataset/{}'.format(
+                dataset_labels.values[i][1]))
+        # Move image into correct directory if it doesn't exist
+        if os.path.exists('dataset/train/{}.jpg'.format(
+                dataset_labels.values[i][0]
+        )):
+            os.rename(
+                'dataset/train/{}.jpg'.format(
+                    dataset_labels.values[i][0]
+                ),
+                'media/dataset/{}/{}.jpg'.format(
+                    dataset_labels.values[i][1],
+                    dataset_labels.values[i][0]
+                )
+            )
+            count += 1
+
+

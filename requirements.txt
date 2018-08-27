@@ -1,4 +1,13 @@
 Django==2.1
+djangorestframework
+markdown
+django-filter
 face_recognition
 scikit-learn
+scipy
 ipdb
+pandas
+keras
+opencv-python
+tqdm
+numpy

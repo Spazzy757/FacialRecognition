@@ -102,3 +102,9 @@ ENV/
 .idea/
 .DS_Store
 *.jpg
+*.clf
+media/
+db.*
+tensorflask
+Tensorflow-Dog-Breed-Classifier
+dataset
