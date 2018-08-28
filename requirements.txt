@@ -1,8 +1,9 @@
 Django==2.1
 djangorestframework
+pillow
+psycopg2-binary
 markdown
 django-filter
-face_recognition
 scikit-learn
 scipy
 ipdb

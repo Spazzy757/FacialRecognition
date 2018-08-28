@@ -3,7 +3,18 @@ services:
 
   web:
     build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - '8000:8000'
+    depends_on:
+      - db
     volumes:
       - .:/code
+
+  db:
+    image: postgres:10
+    volumes:
+      - "postgres-db-volume:/var/lib/postgresql/data"
+
 volumes:
   postgres-db-volume:

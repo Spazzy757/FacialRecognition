@@ -13,7 +13,7 @@ class CapacityImportTestCase(TestCase):
 
     def test_breed_classifier(self):
         classifier = BreedClassifier()
-        result = classifier.classify('media/test_images/sven.jpeg')
+        result = classifier.classify('media/test_images/fifi.jpeg')
         pprint.pprint(result)
 
     def test_clean_data(self):
