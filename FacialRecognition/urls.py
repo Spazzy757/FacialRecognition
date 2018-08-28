@@ -18,6 +18,8 @@ from django.urls import path, re_path, include
 
 from django.contrib.auth.models import User
 from rest_framework import routers, serializers, viewsets
+from django.conf.urls.static import static
+from django.conf import settings
 
 
 # Serializers define the API representation.
@@ -41,6 +43,7 @@ router.register(r'users', UserViewSet)
 urlpatterns = [
 
     path('admin/', admin.site.urls),
-    re_path(r'^', include(router.urls)),
+    # re_path(r'^', include(router.urls)),
+    re_path(r'^api/', include('api.urls')),
     re_path(r'^api-auth/', include('rest_framework.urls'))
 ]
