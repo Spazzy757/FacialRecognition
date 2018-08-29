@@ -16,5 +16,13 @@ services:
     volumes:
       - "postgres-db-volume:/var/lib/postgresql/data"
 
+  tensor_board:
+    build: .
+    command: tensorboard --logdir=/code/media/summaries
+    volumes:
+      - .:/code
+    ports:
+      - '8001:6006'
+
 volumes:
   postgres-db-volume:

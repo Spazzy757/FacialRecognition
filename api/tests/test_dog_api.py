@@ -40,6 +40,9 @@ class DogAPIUploadTestCase(TestCase):
         result = self.client.post('/api/add-file-to-dog/', data=data)
         self.assertTrue(result.status_code == 201,
                         msg="Failed add file to dog")
+        dog_check = Dog.objects.get(id=self.dog.id)
+        self.assertTrue(dog_check.generated_labels.count() > 0,
+                        msg="Failed to run analysis")
 
     def tearDown(self):
         def purge(directory, pattern):

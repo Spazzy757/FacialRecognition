@@ -287,7 +287,7 @@ def run_bottleneck_on_image(sess, image_data, image_data_tensor,
     """
     bottleneck_values = sess.run(
         bottleneck_tensor,
-        feed_fict={
+        {
             image_data_tensor: image_data
         }
     )
@@ -306,20 +306,20 @@ def maybe_download_and_extract():
         os.makedirs(dest_directory)
     filename = DATA_URL.split('/')[-1]
     filepath = os.path.join(dest_directory, filename)
-    # if not os.path.exists(filepath):
-    #
-    #     def _progress(count, block_size, total_size):
-    #         sys.stdout.write('\r>> Downloading %s %.1f%%' %
-    #                          (filename,
-    #                           float(count * block_size) / float(total_size) * 100.0))
-    #         sys.stdout.flush()
-    #
-    #     filepath, _ = urllib.request.urlretrieve(DATA_URL,
-    #                                              filepath,
-    #                                              _progress)
-    #     print()
-    #     statinfo = os.stat(filepath)
-    #     print('Successfully downloaded', filename, statinfo.st_size, 'bytes.')
+    if not os.path.exists(filepath):
+
+        def _progress(count, block_size, total_size):
+            sys.stdout.write('\r>> Downloading %s %.1f%%' %
+                             (filename,
+                              float(count * block_size) / float(total_size) * 100.0))
+            sys.stdout.flush()
+
+        filepath, _ = urllib.request.urlretrieve(DATA_URL,
+                                                 filepath,
+                                                 _progress)
+        print()
+        statinfo = os.stat(filepath)
+        print('Successfully downloaded', filename, statinfo.st_size, 'bytes.')
     tarfile.open(
         'media/models/inception-2015-12-05.tgz',
         'r:gz'
@@ -762,7 +762,9 @@ def add_input_distortions(flip_left_right, random_crop, random_scale,
 
 
 def variable_summaries(var):
-    """Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
+    """
+    Attach a lot of summaries to a Tensor (for TensorBoard visualization).
+    """
     with tf.name_scope('summaries'):
         mean = tf.reduce_mean(var)
         tf.summary.scalar('mean', mean)
