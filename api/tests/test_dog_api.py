@@ -16,7 +16,7 @@ class DogAPIUploadTestCase(TestCase):
         self.file = File.objects.create(
             file=SimpleUploadedFile(
                 name='test_image.jpg',
-                content=open('api/tests/test_image.jpg', 'rb').read(),
+                content=open('api/tests/test_doug_two.jpg', 'rb').read(),
                 content_type='image/jpeg'
             ),
             remark='test'

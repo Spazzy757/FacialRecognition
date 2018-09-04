@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 # Todo: Change to django management command  settings move to global_settings
-python engine/management/commands/retraining.py \
+#python engine/management/commands/retraining.py \
+python manage.py retrain \
 --image_dir=/code/media/dataset/ \
 --model_dir=/code/media/models/ \
 --output_labels=/code/media/models/breed_labels.txt \
 --bottleneck_dir=media/bottleknecks \
 --summaries_dir=/code/media/summaries/ \
---output_graph=/code/media/models/breed_model.pb \
--- eval_step_interval=10 \
---flip_left_right \
---random_scale=0 \
---random_brightness=10 \
---random_crop=10 \
+--output_graph=/code/media/models/breed_model.pb
+#--eval_step_interval=10 \
+#--flip_left_right \
+#--random_scale=0 \
+#--random_brightness=10 \
+#--random_crop=10 \
 
 
 # --output_labels

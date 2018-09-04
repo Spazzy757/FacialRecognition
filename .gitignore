@@ -108,3 +108,4 @@ db.*
 tensorflask
 Tensorflow-Dog-Breed-Classifier
 dataset
+*.zip

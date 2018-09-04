@@ -11,6 +11,8 @@ def classify(instance, **kwargs):
     result = classifier.classify('/code/media/images/{}'.format(
         instance.file.file.name)
     )
+    import ipdb;
+    ipdb.set_trace()
     dog = Dog.objects.get(id=instance.dog.id)
     for prediction in result.get('results'):
         Label.objects.get_or_create(dog_id=dog.id, **prediction)
